@@ -1,6 +1,12 @@
 [package]
 name = "elib-k0-nt"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 
-[dependencies]
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+lto = true # Link Time Optimization을 통한 바이너리 최소화
+opt-level = "z" # 크기 최적화

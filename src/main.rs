@@ -1,3 +1,7 @@
+#![no_std]
+
+mod ct;
+
 fn main() {
-    println!("Hello, world!");
+
 }
