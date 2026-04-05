@@ -1,7 +1,10 @@
-[package]
-name = "elib-k0-nt"
+[workspace]
+members = ["constant-time", "sha2", "sha3"]
+
+[workspace.package]
 version = "1.0.0"
 edition = "2024"
+authors = ["Q. T. Felix <qtfelix@qu4nt.space>"]
 
 [profile.dev]
 panic = "abort"
@@ -10,3 +13,7 @@ panic = "abort"
 panic = "abort"
 lto = true # Link Time Optimization을 통한 바이너리 최소화
 opt-level = "z" # 크기 최적화
+
+[workspace.dependencies]
+constant-time = { path = "constant-time", version = "1.0.0" }
+sha2 = { path = "sha2", version = "1.0.0" }
