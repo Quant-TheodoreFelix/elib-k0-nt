@@ -1,5 +1,7 @@
 # None-Triple EntanglementLib Crypto Module
 
+[![Language](https://img.shields.io/badge/README-English_Ver-blue?style=for-the-badge)](README_EN.md)
+
 [Rust 기반 얽힘 라이브러리 네이티브 프로젝트](https://github.com/Quant-Off/entlib-native)는 가장 많이 사용되는 아키텍처에 대해 `std`(및 `no_std`)를 지원하며, 고보안 규격(국제적 규제 등 컴플라이언스)을 준수하는 데 초점을 맞춥니다. 이 모듈은 그런 부분에서 합리적입니다.
 
 이 모듈은 격리형 초경량 마이크로커널(Isolation Lightweight Microkernel, ISO-Light-K0)에서 Ring 3 사용자 공간(user space) 내에 데몬(daemon) 형식으로 구동되며 TUI와 IPC 메시지를 통해 암호화 통신합니다. 데몬은 Ring 0 커널 공간(kernel space) 속 IPC 엔드포인트 라우터로 데이터를 전송하는 방식으로 동작합니다.
@@ -9,3 +11,18 @@
 > [!IMPORTANT]
 > 이 프로젝트는 `entlib-native`에서처럼 각 암호 기능에 대해 복잡한 정형 문서(또는 기술 명세)를 작성하지 않습니다. 대신, 가능의 API 시그니처와 사용법은 1차적으로 Rust 문서 주석으로 설명되어 있으며, 이를 요약한 내용을 기능이 제공되는 모듈(또는 크레이트)에 `README.md`로 게시하겠습니다.
 
+# 릴리즈 구현 및 목표
+
+얽힘 라이브러리에서 주력으로 사용되던 단일 병목점 관리 구조체인 `SecureBuffer`의 생명주기 컨트롤이 그리워지는 구현이 포함되어 있습니다. 버전 초기화 때에는 개별 기능을 단일 모듈에 포함시키려 했지만, 크레이트 단위로 관리하는 편이 제게는 더 수월한 것 같아 루트를 가상 매니페스트 구조를 선택했습니다.
+
+이 릴리즈 `1.0.0`의 구현 목표는 다음과 같습니다.
+
+- BlockCipher(AES)
+- Hash(SHA2, SHA3, SHAKE, BLAKE2)
+- Post-Quantum Cryptography(ML-DSA, ML-KEM)
+- Digital Signature(Ed25519, Ed448)
+- Key Establishment Protocol(X25519, X448)
+
+블록, 해시, PQC 구현은 얽힘 라이브러리의 구현을 따르면 되기 떄문에 간단하지만, 키 확립 알고리즘은 새로운 구현이기 때문에 시간이 걸릴 수도 있습니다. 만약 이 기능이 구현된다면, 얽힘 라이브러리에도 적용할 생각입니다.
+
+이 릴리즈에서는 우선 암호 기능을 구현하고 정상적으로 작동하는지 테스트를 거치는 것을 목표로 하겠습니다. 커널과 안정적으로 동작하는지에 대한 상세 기능 구현 및 테스트는 다음 알파 버전으로 공개하겠습니다.
