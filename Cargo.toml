@@ -1,5 +1,5 @@
 [workspace]
-members = ["blake", "constant-time", "rng", "ed25519", "ed448", "sha2", "sha3"]
+members = ["blake", "constant-time", "rng", "ed25519", "ed448", "sha2", "sha3", "ed25519", "ed448"]
 resolver = "3"
 
 [workspace.package]

@@ -6,4 +6,3 @@ authors.workspace = true
 
 [dependencies]
 sha2.workspace = true
-constant-time.workspace = true
