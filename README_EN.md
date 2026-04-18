@@ -17,11 +17,15 @@ This includes an implementation that brings back the lifecycle control of `Secur
 
 The implementation goals for this release `1.0.0` are as follows:
 
-- BlockCipher(AES)
-- Hash(SHA2, SHA3, SHAKE, BLAKE2)
+- AEAD, BlockCipher(AES, ChaCha20-Poly1305)
 - Post-Quantum Cryptography(ML-DSA, ML-KEM)
 - Digital Signature(Ed25519, Ed448)
 - Key Establishment Protocol(X25519, X448)
+
+The following features are currently implemented:
+
+- [Constant-time Ops](./constant-time)
+- Hash([SHA2](./sha2), [SHA3](./sha3), [SHAKE](./sha3), [BLAKE2](./blake))
 
 The block, hash, and PQC implementations are straightforward as they follow the Entanglement Library's implementation, but the key establishment algorithm is a new implementation and may take some time. If this feature is implemented, I plan to apply it to the Entanglement Library as well.
 
