@@ -19,7 +19,6 @@
 
 - AEAD, BlockCipher(AES, ChaCha20-Poly1305)
 - Post-Quantum Cryptography(ML-DSA, ML-KEM)
-- Digital Signature(Ed25519, Ed448)
 - Key Establishment Protocol(X25519, X448)
 
 현재 다음 기능이 구현되었습니다.
@@ -27,6 +26,7 @@
 - [Constant-time Ops](./constant-time)
 - Hash([SHA2](./sha2), [SHA3](./sha3), [SHAKE](./sha3), [BLAKE2](./blake))
 - RNG([Hash DRBG](./rng))
+- Digital Signature([Ed25519](./ed25519), [Ed448](./ed448))
 
 블록, 해시, PQC 구현은 얽힘 라이브러리의 구현을 따르면 되기 떄문에 간단하지만, 키 확립 알고리즘은 새로운 구현이기 때문에 시간이 걸릴 수도 있습니다. 만약 이 기능이 구현된다면, 얽힘 라이브러리에도 적용할 생각입니다.
 
