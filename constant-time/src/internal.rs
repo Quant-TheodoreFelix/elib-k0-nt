@@ -248,8 +248,25 @@ pub(crate) fn ct_gt_i64(a: i64, b: i64) -> u8 {
 
 //
 // Generic fallback (any architecture not handled above)
-// black_box makes intermediate values opaque to LLVM.
 //
+// SECURITY WARNING: The generic fallback relies on `core::hint::black_box`
+// which is a best-effort optimization barrier. Constant-time properties
+// are NOT guaranteed on unsupported architectures. Consider adding native
+// assembly implementations for security-critical deployments.
+//
+// Supported architectures with hardware CT guarantees: x86_64, aarch64
+//
+
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+const _: () = {
+    #[deprecated(
+        since = "0.1.0",
+        note = "Constant-time guarantees are weaker on this architecture. \
+                Only x86_64 and aarch64 have verified CT implementations."
+    )]
+    const CT_FALLBACK_WARNING: () = ();
+    let _ = CT_FALLBACK_WARNING;
+};
 
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 #[inline(never)]
@@ -267,10 +284,12 @@ pub(crate) fn ct_sel32(cond: u8, a: u32, b: u32) -> u32 {
 
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 #[must_use]
-#[inline]
+#[inline(never)] // Prevent inlining to reduce optimization opportunities
 pub(crate) fn ct_sel64(cond: u8, a: u64, b: u64) -> u64 {
+    let a = core::hint::black_box(a);
+    let b = core::hint::black_box(b);
     let m = ct_mask(cond);
-    (m & a) | ((!m) & b)
+    core::hint::black_box((m & a) | ((!m) & b))
 }
 
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
@@ -284,36 +303,50 @@ pub(crate) fn ct_eq32(a: u32, b: u32) -> u8 {
 // Result is 1 if a == b, else 0.
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 #[must_use]
-#[inline]
+#[inline(never)] // Prevent inlining to reduce optimization opportunities
 pub(crate) fn ct_eq64(a: u64, b: u64) -> u8 {
+    let a = core::hint::black_box(a);
+    let b = core::hint::black_box(b);
     let diff = a ^ b;
-    let s = diff | diff.wrapping_shr(32);
-    let s = s | s.wrapping_shr(16);
-    let s = s | s.wrapping_shr(8);
+    let s = core::hint::black_box(diff | diff.wrapping_shr(32));
+    let s = core::hint::black_box(s | s.wrapping_shr(16));
+    let s = core::hint::black_box(s | s.wrapping_shr(8));
     // s as u8 is nonzero iff any bit in diff is set (i.e., a != b)
     let byte = core::hint::black_box(s as u8);
     // ct_mask: 0xFF..FF if byte != 0 (a != b), 0 if byte == 0 (a == b)
     let nonzero = ct_mask(byte);
-    (!nonzero & 1) as u8
+    core::hint::black_box((!nonzero & 1) as u8)
 }
 
 // Borrow detection: b - a underflows iff a > b (unsigned).
-// The borrow propagates into bit 32 (or bit 64) of the widened result.
+// The borrow propagates into bit 32 of the widened 64-bit result.
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 #[must_use]
-#[inline]
+#[inline(never)] // Prevent inlining to reduce optimization opportunities
 pub(crate) fn ct_gt_u32(a: u32, b: u32) -> u8 {
-    (core::hint::black_box((b as u64).wrapping_sub(a as u64)) >> 32) as u8 & 1
+    let a = core::hint::black_box(a);
+    let b = core::hint::black_box(b);
+    let diff = (b as u64).wrapping_sub(a as u64);
+    core::hint::black_box((diff >> 32) as u8 & 1)
 }
 
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 #[must_use]
 #[inline]
 pub(crate) fn ct_gt_u64(a: u64, b: u64) -> u8 {
-    // For u64 values, b - a underflows iff a > b.
-    // The borrow is captured in bit 64 of the 128-bit result.
-    // When underflow occurs: upper 64 bits == 0xFFFF_FFFF_FFFF_FFFF -> bit 0 == 1.
-    (core::hint::black_box((b as u128).wrapping_sub(a as u128)) >> 64) as u64 as u8 & 1
+    // Avoid 128-bit arithmetic which may compile to non-CT library calls
+    // on 32-bit platforms. Use half-word comparison instead:
+    //   a > b iff (a_hi > b_hi) OR (a_hi == b_hi AND a_lo > b_lo)
+    let a_hi = (a >> 32) as u32;
+    let a_lo = a as u32;
+    let b_hi = (b >> 32) as u32;
+    let b_lo = b as u32;
+
+    let hi_gt = ct_gt_u32(a_hi, b_hi);
+    let hi_eq = ct_eq32(a_hi, b_hi);
+    let lo_gt = ct_gt_u32(a_lo, b_lo);
+
+    core::hint::black_box(hi_gt | (hi_eq & lo_gt))
 }
 
 // Signed gt via sign-bit decomposition (no branches):
@@ -322,16 +355,18 @@ pub(crate) fn ct_gt_u64(a: u64, b: u64) -> u8 {
 //     OR (a is non-negative AND b is negative)
 #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 #[must_use]
-#[inline]
+#[inline(never)] // Prevent inlining to reduce optimization opportunities
 pub(crate) fn ct_gt_i64(a: i64, b: i64) -> u8 {
+    let a = core::hint::black_box(a);
+    let b = core::hint::black_box(b);
     let a_u = a as u64;
     let b_u = b as u64;
-    let a_msb = (a_u >> 63) as u8; // 1 if a < 0
-    let b_msb = (b_u >> 63) as u8; // 1 if b < 0
+    let a_msb = core::hint::black_box((a_u >> 63) as u8); // 1 if a < 0
+    let b_msb = core::hint::black_box((b_u >> 63) as u8); // 1 if b < 0
     let u_gt = ct_gt_u64(a_u, b_u);
-    let same_sign = (a_msb ^ b_msb) ^ 1; // 1 iff signs are equal
-    let not_a_msb = a_msb ^ 1; // 1 iff a >= 0
-    (same_sign & u_gt) | (not_a_msb & b_msb)
+    let same_sign = core::hint::black_box((a_msb ^ b_msb) ^ 1); // 1 iff signs are equal
+    let not_a_msb = core::hint::black_box(a_msb ^ 1); // 1 iff a >= 0
+    core::hint::black_box((same_sign & u_gt) | (not_a_msb & b_msb))
 }
 
 //

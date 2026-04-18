@@ -280,8 +280,8 @@ impl SHA512State {
         //   needs_extra==0 -> state_b1으로 되돌림
         //
         //   select(a, b, choice) -> choice==1일 때 b, choice==0일 때 a
-        for i in 0..8usize {
-            self.state[i] = u64::select(&state_b1[i], &self.state[i], needs_extra);
+        for (state_val, b1_val) in self.state.iter_mut().zip(state_b1.iter()) {
+            *state_val = u64::select(b1_val, state_val, needs_extra);
         }
 
         // 다이제스트 빌드

@@ -52,14 +52,31 @@ mod tests {
         ((hi as u64) << 32) | lo as u64
     }
 
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(all(not(target_arch = "x86_64"), target_arch = "aarch64"))]
     #[inline(always)]
     fn ticks() -> u64 {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .subsec_nanos() as u64
+        // aarch64: Use CNTVCT_EL0 (virtual count register) for high-precision timing
+        let count: u64;
+        unsafe {
+            core::arch::asm!(
+                "isb",           // Instruction synchronization barrier
+                "mrs {}, cntvct_el0",
+                out(reg) count,
+                options(nostack, nomem),
+            );
+        }
+        count
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    #[inline(always)]
+    fn ticks() -> u64 {
+        use std::time::Instant;
+        // Use Instant for monotonic, high-resolution timing
+        // This is more reliable than SystemTime for measuring short durations
+        static START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+        let start = START.get_or_init(Instant::now);
+        start.elapsed().as_nanos() as u64
     }
 
     //
@@ -131,9 +148,10 @@ mod tests {
 
     // DudeCT parameters
     /// Iterations discarded to warm instruction caches and branch predictors.
-    const WARMUP: usize = 10_000;
+    const WARMUP: usize = 50_000;
     /// Timing samples collected per test (split evenly: half per class).
-    const MEASUREMENTS: usize = 300_000;
+    /// Increased from 300k to 1M for better detection of subtle timing leaks.
+    const MEASUREMENTS: usize = 1_000_000;
     /// Standard dudect threshold.  |t| ≥ 4.5 → timing leak at ~6σ confidence.
     const T_THRESHOLD: f64 = 4.5;
 

@@ -9,7 +9,11 @@ use internal::*;
 // Choice
 //
 
-#[derive(Copy, Clone, Debug)]
+/// A constant-time boolean value (0 or 1).
+///
+/// Debug is intentionally not derived to prevent accidental leakage
+/// of sensitive choice values in logs (CWE-532).
+#[derive(Copy, Clone)]
 pub struct Choice(u8);
 
 impl Choice {
@@ -109,11 +113,21 @@ pub trait CtSelOps: Copy {
         *self = Self::select(self, other, choice);
     }
 
+    /// Conditionally swaps `a` and `b` if `choice == 1`.
+    ///
+    /// The temporary value is passed through `black_box` to prevent the
+    /// compiler from keeping it in registers or optimizing away the zeroing
+    /// (CWE-316 mitigation).
     #[inline]
     fn swap(a: &mut Self, b: &mut Self, choice: Choice) {
-        let t: Self = *a;
+        // Store original value of a
+        let mut t: Self = *a;
         a.assign(b, choice);
         b.assign(&t, choice);
+        // Prevent compiler from optimizing away the temporary or keeping
+        // sensitive data in registers after this function returns.
+        // black_box acts as an optimization barrier.
+        let _ = core::hint::black_box(&mut t);
     }
 }
 

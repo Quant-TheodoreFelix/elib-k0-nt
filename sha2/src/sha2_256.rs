@@ -188,8 +188,8 @@ impl SHA256State {
         //   select(a, b, choice) -> choice==1일 때 b, choice==0일 때 a
         //   needs_extra==1 -> self.state[i]
         //   needs_extra==0 -> state_b1[i]
-        for i in 0..8usize {
-            self.state[i] = u32::select(&state_b1[i], &self.state[i], needs_extra);
+        for (state_val, b1_val) in self.state.iter_mut().zip(state_b1.iter()) {
+            *state_val = u32::select(b1_val, state_val, needs_extra);
         }
 
         // 다이제스트 빌드
