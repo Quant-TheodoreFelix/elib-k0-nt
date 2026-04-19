@@ -1,3 +1,31 @@
+//! Ed448 디지털 서명 알고리즘 구현입니다.
+//!
+//! RFC 8032 (Edwards-Curve Digital Signature Algorithm) Ed448-Goldilocks 표준을 준수합니다.
+//!
+//! # Features
+//! - **표준 준수**: RFC 8032 Ed448 명세 완전 구현
+//! - **상수-시간 연산**: 타이밍 사이드 채널 공격 방지
+//! - **no_std 지원**: 임베디드 환경에서 사용 가능
+//!
+//! # Examples
+//! ```rust,ignore
+//! use ed448::{SecretKey, PublicKey, sign, verify};
+//!
+//! // 키 생성
+//! let secret = SecretKey::from_bytes(&seed);
+//! let public = PublicKey::from(&secret);
+//!
+//! // 서명
+//! let message = b"hello world";
+//! let signature = sign(message, &[], &secret);
+//!
+//! // 검증
+//! assert!(verify(message, &[], &signature, &public).is_ok());
+//! ```
+//!
+//! # Authors
+//! Q. T. Felix
+
 #![cfg_attr(not(test), no_std)]
 
 mod field;
